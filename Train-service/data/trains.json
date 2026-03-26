@@ -1,0 +1,13 @@
+[
+  {
+    "train_number": "12678",
+    "train_name": "Ernakulam - Chennai Express",
+    "days_of_week": [1, 2, 3, 4, 5, 6, 7],
+    "is_active": true,
+    "stops": [
+      { "station_code": "ERS", "sequence": 1, "arrival": "00:00", "departure": "20:30", "day_offset": 0, "distance": 0 },
+      { "station_code": "CBE", "sequence": 2, "arrival": "00:50", "departure": "00:55", "day_offset": 1, "distance": 205 },
+      { "station_code": "MAS", "sequence": 3, "arrival": "05:30", "departure": "00:00", "day_offset": 1, "distance": 690 }
+    ]
+  }
+]

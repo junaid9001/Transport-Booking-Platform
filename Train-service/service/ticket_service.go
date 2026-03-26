@@ -9,7 +9,7 @@ import (
 )
 
 func GetTicket(bookingID, userID string) (interface{}, error) {
-	// First verify booking ownership
+	// 1. Verify booking ownership and preload the schedule and train
 	booking, err := repository.GetBookingByID(bookingID)
 	if err != nil {
 		return nil, err
@@ -21,17 +21,23 @@ func GetTicket(bookingID, userID string) (interface{}, error) {
 		return nil, domainerrors.ErrBookingNotConfirmed
 	}
 
-	// Fetch ticket record
+	// 2. Fetch ticket record
 	ticket, err := repository.GetTicketByBookingID(bookingID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Fetch passengers
+	// 3. Fetch passengers
 	passengers, err := repository.GetPassengersByBookingID(bookingID)
 	if err != nil {
 		return nil, err
 	}
+
+	// NEW LOGIC: Use the booking's specific stations
+	// In the segment-based model, a booking belongs to a specific pair of stations
+	// which may be different from the train's start and end points.
+	fromStation := booking.FromStation.Name // Assuming these are preloaded/available in your model
+	toStation := booking.ToStation.Name
 
 	type TicketResponse struct {
 		TicketNumber string      `json:"ticket_number"`
@@ -54,10 +60,10 @@ func GetTicket(bookingID, userID string) (interface{}, error) {
 		QRCodeURL:    ticket.QRCodeURL,
 		TrainName:    booking.TrainSchedule.Train.TrainName,
 		TrainNumber:  booking.TrainSchedule.Train.TrainNumber,
-		From:         booking.TrainSchedule.Train.OriginStation,
-		To:           booking.TrainSchedule.Train.DestinationStation,
-		DepartureAt:  booking.TrainSchedule.DepartureAt,
-		ArrivalAt:    booking.TrainSchedule.ArrivalAt,
+		From:         fromStation,
+		To:           toStation,
+		DepartureAt:  booking.DepartureTime, // Use the specific station departure time
+		ArrivalAt:    booking.ArrivalTime,   // Use the specific station arrival time
 		Class:        booking.SeatClass,
 		Passengers:   passengers,
 		Status:       booking.Status,
@@ -65,14 +71,13 @@ func GetTicket(bookingID, userID string) (interface{}, error) {
 }
 
 // VerifyTicket validates a QR ticket's HMAC token.
-// Called by station staff at the gate.
 func VerifyTicket(bookingID, token string) (interface{}, error) {
 	booking, err := repository.GetBookingByID(bookingID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Validate HMAC token
+	// Validate HMAC token to ensure the QR wasn't faked
 	valid := utils.VerifyQRToken(bookingID, token)
 	if !valid {
 		return nil, fmt.Errorf("invalid or tampered QR token")
@@ -87,6 +92,8 @@ func VerifyTicket(bookingID, token string) (interface{}, error) {
 		"valid":      true,
 		"booking_id": bookingID,
 		"pnr":        booking.PNR,
+		"train":      booking.TrainSchedule.Train.TrainNumber,
+		"route":      fmt.Sprintf("%s -> %s", booking.FromStation.Code, booking.ToStation.Code),
 		"status":     booking.Status,
 		"passengers": passengers,
 	}, nil

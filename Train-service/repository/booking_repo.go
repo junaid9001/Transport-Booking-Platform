@@ -24,10 +24,13 @@ func CreateBookingSeats(tx *gorm.DB, seats []models.BookingSeat) error {
 	return nil
 }
 
+// GetBookingByID now preloads the specific boarding and destination stations
 func GetBookingByID(bookingID string) (*models.TrainBooking, error) {
 	var booking models.TrainBooking
 	err := db.DB.
-		Preload("TrainSchedule.Train").
+		Preload("TrainSchedule.Train.Stops.Station"). // Preload full route info
+		Preload("FromStation").                       // Boarding station info
+		Preload("ToStation").                         // Destination station info
 		First(&booking, "id = ?", bookingID).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -41,7 +44,9 @@ func GetBookingByID(bookingID string) (*models.TrainBooking, error) {
 func GetBookingByPNR(pnr string) (*models.TrainBooking, error) {
 	var booking models.TrainBooking
 	err := db.DB.
-		Preload("TrainSchedule.Train").
+		Preload("TrainSchedule.Train.Stops.Station").
+		Preload("FromStation").
+		Preload("ToStation").
 		First(&booking, "pnr = ?", pnr).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -52,10 +57,13 @@ func GetBookingByPNR(pnr string) (*models.TrainBooking, error) {
 	return &booking, nil
 }
 
+// GetBookingsByUserID updated to show boarding/destination in booking history
 func GetBookingsByUserID(userID string) ([]models.TrainBooking, error) {
 	var bookings []models.TrainBooking
 	err := db.DB.
 		Preload("TrainSchedule.Train").
+		Preload("FromStation").
+		Preload("ToStation").
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
 		Find(&bookings).Error
@@ -141,10 +149,13 @@ func CreateTicket(tx *gorm.DB, ticket *models.TrainTicket) error {
 	return nil
 }
 
+// GetTicketByBookingID now ensures boarding station info is present for the ticket UI
 func GetTicketByBookingID(bookingID string) (*models.TrainTicket, error) {
 	var ticket models.TrainTicket
 	err := db.DB.
-		Preload("Booking.TrainSchedule.Train").
+		Preload("Booking.TrainSchedule.Train.Stops.Station").
+		Preload("Booking.FromStation").
+		Preload("Booking.ToStation").
 		First(&ticket, "booking_id = ?", bookingID).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
