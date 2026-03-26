@@ -44,6 +44,7 @@ func SearchTrains(origin, destination, class string, date time.Time) ([]SearchRe
 			t.destination_station,
 			ts.departure_at,
 			ts.arrival_at,
+			EXTRACT(EPOCH FROM (ts.arrival_at - ts.departure_at))/60 AS duration_minutes,
 			t.duration_minutes,
 			ts.delay_minutes,
 			ts.status,
