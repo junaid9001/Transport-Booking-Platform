@@ -35,7 +35,7 @@ func SetupBusRoutes(app *fiber.App, cfg *config.Config, db *gorm.DB, rdb *redis.
 	api.Get("/operators", busHandler.GetOperators)
 
 	instance := api.Group("/:instanceId")
-	instance.Get("/", busHandler.GetBus)
+	instance.Get("", busHandler.GetBus)
 	instance.Get("/fares", busHandler.GetBusFares)
 	instance.Get("/seats", busHandler.GetBusSeats)
 	instance.Get("/amenities", busHandler.GetBusAmenities)
@@ -48,7 +48,7 @@ func SetupBusRoutes(app *fiber.App, cfg *config.Config, db *gorm.DB, rdb *redis.
 	bookings := api.Group("/bookings")
 	bookings.Use(middleware.AuthMiddleware)
 
-	bookings.Post("/", bookingHandler.CreateBooking)
+	bookings.Post("", bookingHandler.CreateBooking)
 	bookings.Get("/user/history", bookingHandler.GetUserHistory)
 	bookings.Get("/pnr/:pnr", bookingHandler.GetBookingByPNR)
 	bookings.Get("/:bookingId", bookingHandler.GetBooking)
